@@ -11,13 +11,13 @@ class RandomNetworkDistillation():
         self.target = torch.nn.Sequential(
             torch.nn.Linear(input_size, 64),
             torch.nn.Linear(64, 128),
+            torch.nn.Linear(128, 128),
             torch.nn.Linear(128, 64)
         )
 
         self.predictor = torch.nn.Sequential(
             torch.nn.Linear(input_size, 64),
             torch.nn.Linear(64, 128),
-            torch.nn.Linear(128, 128),
             torch.nn.Linear(128, 64)
         )
 
