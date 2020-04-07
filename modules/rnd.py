@@ -3,6 +3,10 @@ import numpy as np
 import pickle
 import os
 from tensorboardX import SummaryWriter
+
+from os import path
+import sys
+sys.path.append(path.abspath(path.dirname(__file__)))
 from running_mean_std import RunningMeanStd
 
 
