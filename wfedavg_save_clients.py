@@ -5,12 +5,11 @@ from stable_baselines.common import make_vec_env
 from pathlib import Path
 import argparse
 
-from info import subenv_dict, n_envs, seed, client_timesteps, use_cuda
-
+from info import subenv_dict, n_envs, seed, client_timesteps
 parser = argparse.ArgumentParser()
 parser.add_argument("--base-index", type=int)
-parser.parse_args()
-base_index = parser.base_index
+args = parser.parse_args()
+base_index = args.base_index
 
 if __name__ == "__main__":
     base_agent = ACKTR.load(f"./model/{subenv_dict[base_index]}/model.zip")
@@ -22,10 +21,13 @@ if __name__ == "__main__":
         learner = base_agent
         learner.env = env
         learner.verbose = 0
+        
         learner.learn(total_timesteps=client_timesteps)
+
         dir_name = f"base{base_index}_client_model/{subenv}"
         Path(dir_name).mkdir(parents=True, exist_ok=True)
         learner.save(f"{dir_name}/policy.zip")
         del learner
+        
         progress += " " + subenv
         print(f"progress: {progress}")

@@ -18,13 +18,12 @@ def grid_weights_gen(w_size=4, grid_size=16):
         w = num * block_size
         temp.append(w)
         result.append(temp)
-            
+
     return result
 
 
-
 if __name__ == "__main__":
-    li = grid_weights_gen()
+    li = grid_weights_gen(grid_size=8)
     for i in range(len(li)):
         print(li[i])
     print(len(li))
