@@ -11,17 +11,17 @@ from running_mean_std import RunningMeanStd
 
 
 class RandomNetworkDistillation():
-    def __init__(self, input_size=8, learning_late=1e-4, verbose=1, use_cuda=False, tensorboard=True):
+    def __init__(self, input_size=8, learning_late=1e-4, verbose=1, use_cuda=False, tensorboard=False):
         self.target = torch.nn.Sequential(
             torch.nn.Linear(input_size, 64),
             torch.nn.Linear(64, 128),
-            torch.nn.Linear(128, 128),
             torch.nn.Linear(128, 64)
         )
 
         self.predictor = torch.nn.Sequential(
             torch.nn.Linear(input_size, 64),
             torch.nn.Linear(64, 128),
+            torch.nn.Linear(128, 128),
             torch.nn.Linear(128, 64)
         )
 
