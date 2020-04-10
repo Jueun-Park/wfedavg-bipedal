@@ -9,11 +9,11 @@ from info import subenv_dict
 
 if __name__ == "__main__":
     for subenv_id in subenv_dict.values():
-        with open(f"rnd_dataset/{subenv_id}.pkl", "rb") as f:
-            rnd_training_dataset = pickle.load(f)
-        print(
-            f"> rnd training data size: {len(rnd_training_dataset)}")
         for base_id, test_env_id in subenv_dict.items():
+            with open(f"rnd_dataset/base{base_id}/{subenv_id}.pkl", "rb") as f:
+                rnd_training_dataset = pickle.load(f)
+            print(
+                f"> rnd training data size: {len(rnd_training_dataset)}")
             env = gym.make(f"selected-bipedal-{test_env_id}-v0")
             rnd = RandomNetworkDistillation(
                 env.observation_space.shape[0], use_cuda=False, tensorboard=False)
