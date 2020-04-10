@@ -5,6 +5,7 @@ from stable_baselines.common import make_vec_env
 from pathlib import Path
 import argparse
 
+from callback import save_rnd_dataset_callback
 from info import subenv_dict, n_envs, seed, client_timesteps
 parser = argparse.ArgumentParser()
 parser.add_argument("--base-index", type=int)
@@ -22,7 +23,8 @@ if __name__ == "__main__":
         learner.env = env
         learner.verbose = 0
         
-        learner.learn(total_timesteps=client_timesteps)
+        learner.learn(total_timesteps=client_timesteps,
+                      callback=save_rnd_dataset_callback)
 
         dir_name = f"base{base_index}_client_model/{subenv}"
         Path(dir_name).mkdir(parents=True, exist_ok=True)
