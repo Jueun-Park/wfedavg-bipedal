@@ -2,7 +2,8 @@ import torch
 import numpy as np
 import pickle
 import os
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
+from pathlib import Path
 
 from os import path
 import sys
@@ -91,6 +92,7 @@ class RandomNetworkDistillation():
         return intrinsic_reward
 
     def save(self, path="rnd_model/", subfix=None):
+        Path(path).mkdir(parents=True, exist_ok=True)
         if not os.path.isdir(path):
             os.mkdir(path)
         if subfix is not None:
