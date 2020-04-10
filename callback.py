@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+from pathlib import Path
 
 from info import n_envs
 
@@ -7,6 +8,9 @@ from info import n_envs
 n_steps_for_callback = 1000  # batch size 20k
 global rnd_training_dataset
 rnd_training_dataset = []
+
+
+base_index = 2
 
 
 def save_rnd_dataset_callback(_locals, _globals):
@@ -30,7 +34,9 @@ def save_rnd_dataset_callback(_locals, _globals):
         env_name = agent.env.envs[0].__str__()
         env_name = env_name.split("<")[4]
         env_name = env_name.split("-")[2]
-        with open(f"rnd_dataset/{env_name}.pkl", "wb") as f:
+        dir_name = f"rnd_dataset/base{base_index}"
+        Path(dir_name).mkdir(parents=True, exist_ok=True)
+        with open(f"{dir_name}/{env_name}.pkl", "wb") as f:
             pickle.dump(rnd_training_dataset, f)
         rnd_training_dataset = []
     return True

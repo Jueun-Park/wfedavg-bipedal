@@ -34,6 +34,7 @@ if __name__ == "__main__":
                 obs, reward, done, info = test_env.step(action[0])
                 if done:
                     obs = test_env.reset()
+            del rnd
 
     # axis1: data, axis2: model
     cri_mean = np.mean(intrinsic_rewards, axis=2)
