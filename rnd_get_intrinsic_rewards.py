@@ -22,10 +22,11 @@ if __name__ == "__main__":
         test_agent = ACKTR.load(f"./model/{subenv}/model.zip")
 
         model_label = []
-        for i in range(len(subenv_dict)):
+        for i, data_subenv in subenv_dict.items():
             # rnd model
             rnd = RandomNetworkDistillation(input_size=24)
-            rnd.load(f"./model/bipedal_num_clients_4/0/rnd_{i}")
+            # rnd.load(f"./model/bipedal_num_clients_4/0/rnd_{i}")
+            rnd.load(f"./base{subenv_i}_client_model/{data_subenv}/rnd")
             obs = test_env.reset()
             for _ in range(num_test):
                 intrinsic_rewards[subenv_i][i].append(rnd.get_intrinsic_reward(obs))
@@ -44,8 +45,9 @@ if __name__ == "__main__":
     print(std_std)
     standardized_ir = (cri_mean - std_mean) / std_std
     print(standardized_ir)
-    
-    # Path("log").mkdir(parents=True, exist_ok=True)
-    # with open(f"log/rnd_log_base{subenv_i}.csv", "w", newline="") as f:
-    #     wf = csv.writer(f)
-    #     wf.writerow([f"base{subenv_i}"])
+
+    Path("log").mkdir(parents=True, exist_ok=True)
+    with open(f"log/rnd_log.csv", "w", newline="") as f:
+        wf = csv.writer(f)
+        for i in range(4):
+            wf.writerow([f"base{i}"] + list(standardized_ir[i]))
