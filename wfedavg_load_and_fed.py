@@ -50,7 +50,7 @@ if __name__ == "__main__":
         base_parameter_dict = aligned_agent.get_parameters()
         model_align(w, base_parameter_dict, sub_model_parameters, alpha=alpha)
         aligned_agent.load_parameters(base_parameter_dict)
-        avg_reward, reward_std = evaluate_policy(aligned_agent, base_env)
+        avg_reward, reward_std = evaluate_policy(aligned_agent, base_env, n_eval_episodes=100)
         w_labels.append(w)
         test_rewards.append(avg_reward)
         if i % 10 == 0:
