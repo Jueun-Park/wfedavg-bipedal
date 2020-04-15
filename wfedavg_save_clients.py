@@ -3,33 +3,44 @@ import gym_selected_bipedal
 from stable_baselines import ACKTR
 from stable_baselines.common import make_vec_env
 from pathlib import Path
-import argparse
+import multiprocessing as mp
+from itertools import product
+import time
 
 from callback import save_rnd_dataset_callback
 from info import subenv_dict, n_envs, seed, client_timesteps
-parser = argparse.ArgumentParser()
-parser.add_argument("--base-index", type=int)
-args = parser.parse_args()
-base_index = args.base_index
+
+
+def save_client(args):
+    base_index, subenv_id = args
+    base_agent = ACKTR.load(f"./base_agent/{subenv_dict[base_index]}/model.zip")
+
+    subenv = subenv_dict[subenv_id]
+    env = make_vec_env(
+        f"selected-bipedal-{subenv}-v0", n_envs=n_envs, seed=seed)
+    learner = base_agent
+    learner.env = env
+    learner.verbose = 0
+
+    learner.learn(total_timesteps=client_timesteps,
+                #   callback=save_rnd_dataset_callback,  # TODO: fix rnd callback
+                  )
+
+    dir_name = f"base{base_index}_client_model/{subenv}"
+    Path(dir_name).mkdir(parents=True, exist_ok=True)
+    learner.save(f"{dir_name}/policy.zip")
+    print(f"base {base_index} sub-env {subenv} done")
+
 
 if __name__ == "__main__":
-    base_agent = ACKTR.load(f"./model/{subenv_dict[base_index]}/model.zip")
+    start_time = time.time()
+    args = []
+    for arg in product(range(4), range(4)):
+        args.append(arg)
+    print(args)
 
-    progress = ""
-    for subenv in subenv_dict.values():
-        env = make_vec_env(
-            f"selected-bipedal-{subenv}-v0", n_envs=n_envs, seed=seed)
-        learner = base_agent
-        learner.env = env
-        learner.verbose = 0
-        
-        learner.learn(total_timesteps=client_timesteps,
-                      callback=save_rnd_dataset_callback)
-
-        dir_name = f"base{base_index}_client_model/{subenv}"
-        Path(dir_name).mkdir(parents=True, exist_ok=True)
-        learner.save(f"{dir_name}/policy.zip")
-        del learner
-        
-        progress += " " + subenv
-        print(f"progress: {progress}")
+    with mp.Pool(None) as p:
+        p.map(save_client, args)
+    
+    minutes, seconds = divmod(time.time() - start_time, 60)
+    print(f"Time processed: {minutes:.0f}m {seconds:.0f}s")
