@@ -33,7 +33,7 @@ if __name__ == "__main__":
             product(
                 subenv_dict.values(),
                 subenv_dict.keys()),
-            chunksize=2,
+            chunksize=4,
             )
     minutes, seconds = divmod(time.time() - start_time, 60)
     print(f"Time processed: {minutes:.0f}m {seconds:.0f}s")
