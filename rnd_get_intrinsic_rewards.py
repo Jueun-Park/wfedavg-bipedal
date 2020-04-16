@@ -14,7 +14,7 @@ from modules.rnd import RandomNetworkDistillation
 from info import subenv_dict, seed
 
 
-num_test = 1000000  # 1M
+num_test = 10000
 
 
 def get_intrinsic_reward(base_index, client_env):
