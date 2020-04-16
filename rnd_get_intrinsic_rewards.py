@@ -6,37 +6,50 @@ from stable_baselines import ACKTR
 from stable_baselines.common import make_vec_env
 import csv
 from pathlib import Path
+import multiprocessing as mp
+from itertools import product
+import time
 
 from modules.rnd import RandomNetworkDistillation
 from info import subenv_dict, seed
 
 
-num_test = 100
+num_test = 1000000  # 1M
+
+
+def get_intrinsic_reward(base_index, client_env):
+    intrinsic_rewards = []
+    # base env
+    base_name = subenv_dict[base_index]
+    base_env = make_vec_env(
+        f"selected-bipedal-{base_name}-v0", n_envs=1, seed=seed)
+    base_agent = ACKTR.load(f"./base_agent/{base_name}/model.zip")
+
+    # rnd model
+    rnd = RandomNetworkDistillation(input_size=24)
+    rnd.load(f"./base{base_index}_client_model/{client_env}/rnd")
+    obs = base_env.reset()
+    for _ in range(num_test):
+        intrinsic_rewards.append(rnd.get_intrinsic_reward(obs))
+        action = base_agent.predict(obs)
+        obs, reward, done, info = base_env.step(action[0])
+        if done:
+            obs = base_env.reset()
+    return intrinsic_rewards
+
 
 if __name__ == "__main__":
-    intrinsic_rewards = [[[] for _ in range(len(subenv_dict))] for _ in range(len(subenv_dict))]
-    for subenv_i, subenv in subenv_dict.items():
-        # data
-        test_env = make_vec_env(
-            f"selected-bipedal-{subenv}-v0", n_envs=1, seed=seed)
-        test_agent = ACKTR.load(f"./model/{subenv}/model.zip")
+    intrinsic_rewards = []
+    start_time = time.time()
+    with mp.Pool(None) as pool:
+        intrinsic_rewards = pool.starmap(get_intrinsic_reward, product(subenv_dict.keys(), subenv_dict.values()))
+    minutes, seconds = divmod(time.time() - start_time, 60)
+    print(f"Time processed: {minutes:.0f}m {seconds:.0f}s")
 
-        model_label = []
-        for i, data_subenv in subenv_dict.items():
-            # rnd model
-            rnd = RandomNetworkDistillation(input_size=24)
-            # rnd.load(f"./model/bipedal_num_clients_4/0/rnd_{i}")
-            rnd.load(f"./base{subenv_i}_client_model/{data_subenv}/rnd")
-            obs = test_env.reset()
-            for _ in range(num_test):
-                intrinsic_rewards[subenv_i][i].append(rnd.get_intrinsic_reward(obs))
-                action = test_agent.predict(obs)
-                obs, reward, done, info = test_env.step(action[0])
-                if done:
-                    obs = test_env.reset()
-            del rnd
+    intrinsic_rewards = np.array(intrinsic_rewards)
+    intrinsic_rewards = np.reshape(intrinsic_rewards, (len(subenv_dict), len(subenv_dict), num_test))
 
-    # axis1: data, axis2: model
+    # axis1: base env, axis2: client env
     cri_mean = np.mean(intrinsic_rewards, axis=2)
     std_mean = np.mean(cri_mean, axis=1)
     print(cri_mean)
