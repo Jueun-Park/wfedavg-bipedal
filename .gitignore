@@ -1,3 +1,6 @@
 .vscode
 venv
 *model/
+__pycache__
+rnd_dataset/
+log/
