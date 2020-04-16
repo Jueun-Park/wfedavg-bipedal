@@ -7,7 +7,7 @@ import multiprocessing as mp
 from itertools import product
 import time
 
-from callback import save_rnd_dataset_callback
+from callback import SaveRNDDatasetCallback
 from info import subenv_dict, n_envs, seed, client_timesteps
 
 
@@ -20,9 +20,9 @@ def save_client(base_index, subenv_id):
     learner = base_agent
     learner.env = env
     learner.verbose = 0
-
+    callback = SaveRNDDatasetCallback(base_index=base_index)
     learner.learn(total_timesteps=client_timesteps,
-                #   callback=save_rnd_dataset_callback,  # TODO: fix rnd callback
+                  callback=callback,
                   )
 
     dir_name = f"base{base_index}_client_model/{subenv}"
