@@ -17,8 +17,8 @@ from info import subenv_dict, seed
 num_test = 10000
 
 
-def get_intrinsic_reward(base_index, client_env):
-    intrinsic_rewards = []
+def get_intrinsic_reward(base_index):
+    intrinsic_rewards = [[] for _ in range(len(subenv_dict))]
     # base env
     base_name = subenv_dict[base_index]
     base_env = make_vec_env(
@@ -26,11 +26,15 @@ def get_intrinsic_reward(base_index, client_env):
     base_agent = ACKTR.load(f"./base_agent/{base_name}/model.zip")
 
     # rnd model
-    rnd = RandomNetworkDistillation(input_size=24)
-    rnd.load(f"./base{base_index}_client_model/{client_env}/rnd")
+    rnd_dict = {}
+    for client_env in subenv_dict.values():
+        rnd = RandomNetworkDistillation(input_size=24)
+        rnd.load(f"./base{base_index}_client_model/{client_env}/rnd")
+        rnd_dict[client_env] = rnd
     obs = base_env.reset()
     for _ in range(num_test):
-        intrinsic_rewards.append(rnd.get_intrinsic_reward(obs))
+        for i, client_env in subenv_dict.items():
+            intrinsic_rewards[i].append(rnd_dict[client_env].get_intrinsic_reward(obs))
         action = base_agent.predict(obs)
         obs, reward, done, info = base_env.step(action[0])
         if done:
@@ -42,12 +46,11 @@ if __name__ == "__main__":
     intrinsic_rewards = []
     start_time = time.time()
     with mp.Pool(None) as pool:
-        intrinsic_rewards = pool.starmap(get_intrinsic_reward, product(subenv_dict.keys(), subenv_dict.values()))
+        intrinsic_rewards = pool.map(get_intrinsic_reward, subenv_dict.keys())
     minutes, seconds = divmod(time.time() - start_time, 60)
     print(f"Time processed: {minutes:.0f}m {seconds:.0f}s")
 
     intrinsic_rewards = np.array(intrinsic_rewards)
-    intrinsic_rewards = np.reshape(intrinsic_rewards, (len(subenv_dict), len(subenv_dict), num_test))
 
     # axis1: base env, axis2: client env
     cri_mean = np.mean(intrinsic_rewards, axis=2)
