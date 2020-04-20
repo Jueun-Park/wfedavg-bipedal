@@ -15,7 +15,7 @@ class SaveRNDDatasetCallback(BaseCallback):
     :param verbose: (int) Verbosity level 0: not output 1: info 2: debug
     """
 
-    def __init__(self, base_index, verbose=0):
+    def __init__(self, base_index, subenv_seed=None, verbose=0):
         super(SaveRNDDatasetCallback, self).__init__(verbose)
         # Those variables will be accessible in the callback
         # (they are defined in the base class)
@@ -36,6 +36,7 @@ class SaveRNDDatasetCallback(BaseCallback):
         # self.parent = None  # type: Optional[BaseCallback]
         self.base_index = base_index
         self.rnd_training_dataset = []
+        self.seed = subenv_seed
 
     def _on_rollout_end(self) -> None:
         """
@@ -55,6 +56,8 @@ class SaveRNDDatasetCallback(BaseCallback):
         env_name = env_name.split("<")[4]
         env_name = env_name.split("-")[2]
         dir_name = f"rnd_dataset/base{self.base_index}"
+        if self.seed is not None:
+            dir_name += f"_{self.seed}"
         Path(dir_name).mkdir(parents=True, exist_ok=True)
         with open(f"{dir_name}/{env_name}.pkl", "wb") as f:
             pickle.dump(self.rnd_training_dataset, f)

@@ -13,30 +13,20 @@ import time
 
 from modules.gen_weights import grid_weights_gen
 from info import subenv_dict, seed, alpha
+from wfedavg_load_and_fed import model_align
 
 
-def model_align(w, base_parameter_dict, sub_model_parameters, alpha):
-    keys = base_parameter_dict.keys()
-    for key in keys:
-        layer_parameter = []
-        for i in range(4):
-            layer_parameter.append(sub_model_parameters[i][key])
-        # weighted average
-        delta = np.average(layer_parameter, axis=0, weights=w)
-        base_parameter_dict[key] = (
-            1-alpha) * base_parameter_dict[key] + alpha*delta
-
-
-def fed_and_eval(base_index, w):
+def ho_fed_and_eval(base_index, w):
     base_env = make_vec_env(
         f"selected-bipedal-{subenv_dict[base_index]}-v0", n_envs=1, seed=seed)
-    base_agent = ACKTR.load(f"./base_agent/{subenv_dict[base_index]}_{seed}/model.zip")
+    base_agent = ACKTR.load(f"./base_agent/{subenv_dict[base_index]}/model.zip")
     base_parameter_dict = base_agent.get_parameters()
 
     sub_model_parameters = []
-    for subenv in subenv_dict.values():
+    subenv = subenv_dict[base_index]
+    for i in range(4):
         client_policy = ACKTR.load(
-            f"./base{base_index}_client_model/{subenv}/policy.zip")
+            f"./ho_base{base_index}_client_model/{seed+i}/policy.zip")
         sub_model_parameters.append(client_policy.get_parameters())
 
     aligned_agent = base_agent
@@ -59,13 +49,13 @@ if __name__ == "__main__":
 
     start_time = time.time()
     with mp.Pool(None) as p:
-        test_results = p.starmap(fed_and_eval, product(range(4), weights))
+        test_results = p.starmap(ho_fed_and_eval, product(range(4), weights))
     minutes, seconds = divmod(time.time() - start_time, 60)
     print(f"Time processed: {minutes:.0f}m {seconds:.0f}s")
 
     Path("log").mkdir(parents=True, exist_ok=True)
     for base_index in range(4):
-        with open(f"log/wfedavg_log_base{base_index}.csv", "w", newline="") as f:
+        with open(f"log/ho_wfedavg_log_base{base_index}.csv", "w", newline="") as f:
             wf = csv.writer(f)
             wf.writerow(weights)
             si = int(len(test_results)/4*base_index)

@@ -11,7 +11,8 @@ from itertools import product
 import time
 
 from modules.rnd import RandomNetworkDistillation
-from info import subenv_dict, seed
+from info import subenv_dict, seed, client_timesteps
+from callback import SaveRNDDatasetCallback
 
 
 num_test = 10000
@@ -31,14 +32,20 @@ def get_intrinsic_reward(base_index):
         rnd = RandomNetworkDistillation(input_size=24)
         rnd.load(f"./base{base_index}_client_model/{client_env}/rnd")
         rnd_dict[client_env] = rnd
-    obs = base_env.reset()
-    for _ in range(num_test):
-        for i, client_env in subenv_dict.items():
-            intrinsic_rewards[i].append(rnd_dict[client_env].get_intrinsic_reward(obs))
-        action = base_agent.predict(obs)
-        obs, reward, done, info = base_env.step(action[0])
-        if done:
-            obs = base_env.reset()
+    callback = SaveRNDDatasetCallback(base_index=base_index)
+    learner.learn(total_timesteps=client_timesteps,
+                  callback=callback,
+                  )
+    with open(f"rnd_dataset/base{base_id}/{subenv_id}.pkl", "rb") as f:
+        rnd_eval_dataset = pickle.load(f)
+    # obs = base_env.reset()
+    # for _ in range(num_test):
+    #     for i, client_env in subenv_dict.items():
+    #         intrinsic_rewards[i].append(rnd_dict[client_env].get_intrinsic_reward(obs))
+    #     action = base_agent.predict(obs)
+    #     obs, reward, done, info = base_env.step(action[0])
+    #     if done:
+    #         obs = base_env.reset()
     return intrinsic_rewards
 
 

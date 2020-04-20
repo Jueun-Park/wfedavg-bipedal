@@ -10,8 +10,10 @@ from modules.rnd import RandomNetworkDistillation
 from info import subenv_dict
 
 
-def train_rnd(subenv_id, base_id):
+def train_rnd(subenv_id, base_id, subenv_seed=None):
     test_env_id = subenv_dict[base_id]
+    if subenv_seed is not None:
+        subenv_id += f"_{subenv_seed}"
     with open(f"rnd_dataset/base{base_id}/{subenv_id}.pkl", "rb") as f:
         rnd_training_dataset = pickle.load(f)
     print(
@@ -21,6 +23,8 @@ def train_rnd(subenv_id, base_id):
         env.observation_space.shape[0], use_cuda=True, tensorboard=False, verbose=0)
     rnd.learn(np.array(rnd_training_dataset), n_steps=2000)
     save_path = f"base{base_id}_client_model/{subenv_id}/rnd"
+    if subenv_seed is not None:
+        save_path = "ho_" + save_path
     rnd.save(path=save_path)
     print(f"save {save_path}")
 
