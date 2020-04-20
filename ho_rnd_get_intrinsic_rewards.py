@@ -9,13 +9,14 @@ from pathlib import Path
 import multiprocessing as mp
 from itertools import product
 import time
+import pickle
 
 from modules.rnd import RandomNetworkDistillation
 from info import subenv_dict, seed, client_timesteps
 from callback import SaveRNDDatasetCallback
 
 
-num_test = 10000
+# num_test = 10000
 
 
 def get_intrinsic_reward(base_index):
@@ -25,19 +26,27 @@ def get_intrinsic_reward(base_index):
     base_env = make_vec_env(
         f"selected-bipedal-{base_name}-v0", n_envs=1, seed=seed)
     base_agent = ACKTR.load(f"./base_agent/{base_name}/model.zip")
+    subenv_id = base_name
 
-    # rnd model
-    rnd_dict = {}
-    for client_env in subenv_dict.values():
-        rnd = RandomNetworkDistillation(input_size=24)
-        rnd.load(f"./base{base_index}_client_model/{client_env}/rnd")
-        rnd_dict[client_env] = rnd
-    callback = SaveRNDDatasetCallback(base_index=base_index)
-    learner.learn(total_timesteps=client_timesteps,
+    # eval data
+    callback = SaveRNDDatasetCallback(base_index=base_index, subenv_seed=seed+5)
+    base_agent.env = base_env
+    base_agent.learn(total_timesteps=client_timesteps,
                   callback=callback,
                   )
-    with open(f"rnd_dataset/base{base_id}/{subenv_id}.pkl", "rb") as f:
+    # rnd model
+    rnd_dict = {}
+    seeds = [seed + i for i in range(4)]
+    for subenv_seed in seeds:
+        rnd = RandomNetworkDistillation(input_size=24)
+        rnd.load(f"./ho_base{base_index}_client_model/{subenv_seed}/rnd")
+        rnd_dict[subenv_seed] = rnd
+    # eval
+    with open(f"rnd_dataset/base{base_index}_{seed+5}/{subenv_id}.pkl", "rb") as f:
         rnd_eval_dataset = pickle.load(f)
+        for obs in rnd_eval_dataset:
+            for i, subenv_seed in enumerate(seeds):
+                intrinsic_rewards[i].append(rnd_dict[subenv_seed].get_intrinsic_reward(obs))
     # obs = base_env.reset()
     # for _ in range(num_test):
     #     for i, client_env in subenv_dict.items():
@@ -71,7 +80,7 @@ if __name__ == "__main__":
     print(standardized_ir)
 
     Path("log").mkdir(parents=True, exist_ok=True)
-    with open(f"log/rnd_log.csv", "w", newline="") as f:
+    with open(f"log/ho_rnd_log.csv", "w", newline="") as f:
         wf = csv.writer(f)
         for i in range(4):
             wf.writerow([f"base{i}"] + list(standardized_ir[i]))
