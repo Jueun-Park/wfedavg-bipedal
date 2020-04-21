@@ -31,6 +31,7 @@ def get_intrinsic_reward(base_index):
     # eval data
     callback = SaveRNDDatasetCallback(base_index=base_index, subenv_seed=seed+5)
     base_agent.env = base_env
+    base_agent.verbose = 0
     base_agent.learn(total_timesteps=client_timesteps,
                   callback=callback,
                   )
